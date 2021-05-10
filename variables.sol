@@ -22,4 +22,22 @@ contract WorkingWithVariables {
         myUint--;
     }
     
+    address public myAddress;
+    
+    function setAddress(address _myAddress) public{
+        myAddress = _myAddress;
+        
+    }
+    
+    function getBalanceOfAddress() public view returns(uint){
+        return myAddress.balance;
+    }
+    
+    string public myString;
+    
+    function setMyString(string memory _myString) public{
+        myString = _myString;
+    }
+    
+    
 }
