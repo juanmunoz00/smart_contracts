@@ -27,6 +27,13 @@ contract MappingStructureExample{
         //A payable specifies will be dealing with addresses
         //balanceReceived[msg.sender] += msg.value;
         
+        /*
+            balanceReceived is a mapping where:
+            a) msg.sender act as the key in the mapping, in this case, an address.
+            b) The value is the structure named Balance that currently has 3 members/properties. totalBalance is one of them.
+            
+            In the mapping balanceReceived ww are storing the value of the transaction (wei) in the element which the key is the address.
+        */
         balanceReceived[msg.sender].totalBalance += msg.value;
         
         //Referenced typed (??) this is stored in memory
