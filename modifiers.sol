@@ -31,6 +31,9 @@ contract InheritanceModifierExample is Owned{
         require(tokenBalance[msg.sender] >= _amount, "not enough tokens");
         assert(tokenBalance[_to] + _amount >= tokenBalance[_to]);
         assert(tokenBalance[msg.sender] - _amount <= tokenBalance[msg.sender]);
+
+        tokenBalance[msg.sender] -= _amount;
+        tokenBalance[_to] += _amount;        
     }
 
 }
