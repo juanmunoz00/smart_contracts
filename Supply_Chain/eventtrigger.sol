@@ -1,5 +1,31 @@
 pragma solidity ^0.6.0;
 
+
+/* 
+    Implementing an ownable functionality
+    To check https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
+*/
+contract Ownable{
+    address payable _owner;
+    
+    constructor() public{
+        _owner = msg.sender;
+    }
+    
+    /* === This is all linked togehter === */
+    /* A modifier "frames/packs" certain reusable functionality */
+    modifier onlyOwner(){
+        require(isOwner(), "You're not the owner");
+        _;
+    }
+    
+    function isOwner() public view returns(bool){
+        return (msg.sender == _owner);
+    }
+    /* === This is all linked togehter === */
+    
+}
+
 contract Item{
     uint public priceInWei;
     uint public pricePaid;
@@ -39,7 +65,7 @@ contract Item{
     
 }
 
-contract ItemManager{
+contract ItemManager is Ownable{
     
     /* Enumeration to define an item state/stage/phase */
     
@@ -60,7 +86,7 @@ contract ItemManager{
     uint itemIndex;
     
     /* Create an item with the provided attributes */
-    function createItem(string memory _identifier, uint _itemPrice) public{
+    function createItem(string memory _identifier, uint _itemPrice) public onlyOwner{
         Item item = new Item(this, _itemPrice, itemIndex); //Instantiating the contract that'll handle the items
         
         items[itemIndex]._item = item;
@@ -84,7 +110,7 @@ contract ItemManager{
         emit SupplyChainStep(itemIndex, uint(items[_itemIndex]._state), address(items[_itemIndex]._item));//Communicate to the "outside world" (SC)
     }
     
-    function triggerDelivery(uint _itemIndex) public {
+    function triggerDelivery(uint _itemIndex) public onlyOwner{
         
         require(items[_itemIndex]._state == SupplyChainState.Created, "Item is further in the chain !");
         items[_itemIndex]._state = SupplyChainState.Paid;
