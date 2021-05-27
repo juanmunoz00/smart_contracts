@@ -62,7 +62,14 @@ handleSubmit = async() => {
 
   const { cost, itemName } = this.state;
   //Send this values to the SC in the BCH.
-  await this.itemmanager.methods.createItem(itemName, cost).send({from: this.accounts[0]});
+  let result = await this.itemmanager.methods.createItem(itemName, cost).send({from: this.accounts[0]});
+  let resultMsg = "Send " + cost + " wei to " + result.events.SupplyChainStep.returnValues._itemAddress;
+  console.log(result);
+  
+  //alert("Send " + cost + " wei to " + result.events.SupplyChainStep.returnValues._itemAddress);
+  var confirmMsg = document.getElementById("confirm_msg");
+  confirmMsg.removeAttribute("hidden");
+  confirmMsg.innerHTML = resultMsg;
 
 }
 
@@ -79,7 +86,10 @@ handleSubmit = async() => {
         Cost in Wei: <input type="text" name="cost" value={ this.state.cost } onChange={this.handleInputChange} />
         Item Identifier: <input type="text" name="itemName" value={ this.state.item } onChange={this.handleInputChange} />
         <button type="button" onClick={this.handleSubmit}>Create a new item</button>
-
+        <div>
+          <p id="confirm_msg" hidden></p>
+        </div>
+        
       </div>
     );
   }
