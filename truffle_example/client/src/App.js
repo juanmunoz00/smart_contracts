@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 //import SimpleStorageContract from "./contracts/SimpleStorage.json";
-import ItemmanagerContract from './contracts/Itemmanager.json';
+import ItemmanagerContract from './contracts/ItemManager.json';
 import ItemContract from './contracts/Item.json';
 import getWeb3 from "./getWeb3";
 
@@ -20,15 +20,15 @@ class App extends Component {
       // Get the contract instance.
       this.networkId = await this.web3.eth.net.getId();
       //const deployedNetwork = ItemmanagerContract.networks[networkId];
-      this.itemManager = new web3.eth.Contract(
-        ItemmanagerContract.abi.
-        ItemmanagerContract.networks[networkId] && ItemmanagerContract.networks[networkId].address,
+      this.itemmanager = new this.web3.eth.Contract(
+        ItemmanagerContract.abi,
+        ItemmanagerContract.networks[this.networkId] && ItemmanagerContract.networks[this.networkId].address,
         //deployedNetwork && deployedNetwork.address,
       );
 
-      this.item = new web3.eth.Contract(
-        ItemContract.abi.
-        ItemContract.networks[networkId] && ItemContract.networks[networkId].address,
+      this.item = new this.web3.eth.Contract(
+        ItemContract.abi,
+        ItemContract.networks[this.networkId] && ItemContract.networks[this.networkId].address,
         //deployedNetwork && deployedNetwork.address,
       );
 
@@ -48,11 +48,11 @@ handleInputChange = (event) => {
   
   const target = event.target;
   //Establish the item value
-  const value = target.type == "checkbox" ? target.checked : target.value;
+  const value = target.type === "checkbox" ? target.checked : target.value;
   const name = target.name;
 
   //Establish the state
-  this.state({
+  this.setState({
     [name]: value
   });
 
@@ -62,7 +62,7 @@ handleSubmit = async() => {
 
   const { cost, itemName } = this.state;
   //Send this values to the SC in the BCH.
-  await this.itemManager.methods.createItem(itemName, cost).send({from: this.accounts[0]});
+  await this.itemmanager.methods.createItem(itemName, cost).send({from: this.accounts[0]});
 
 }
 
@@ -76,9 +76,9 @@ handleSubmit = async() => {
         <h1>Event Trigger / Supply Chain Example</h1>
         <h2>Items</h2>
         <h2>Add Items</h2>
-        Cost in Wei: <input type="text" name="cost" value={ this.state.cost } onChange={} />
-        Item Identifier: <input type="text" name="itemName" value={ this.state.item } onChange={} />
-        <button type="button" onclick={}>Create a new item</button>
+        Cost in Wei: <input type="text" name="cost" value={ this.state.cost } onChange={this.handleInputChange} />
+        Item Identifier: <input type="text" name="itemName" value={ this.state.item } onChange={this.handleInputChange} />
+        <button type="button" onClick={this.handleSubmit}>Create a new item</button>
 
       </div>
     );

@@ -1,62 +1,121 @@
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
-contract MappingStructureExample{
-    //A mapping works as a dictionary with a key and a value;
-    //This mapping is to pair an address and its account balance
+
+/* 
+    Implementing an ownable functionality
+    To check https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
+*/
+contract Ownable{
+    address payable _owner;
     
-    //In this iteration 2 structures will be used to handle transactions more efficiently
-    struct Payment{
-        uint amount;
-        uint timeStamps;
+    constructor() public{
+        _owner = msg.sender;
     }
     
-    struct Balance{
-        uint totalBalance;
-        uint numPayments; //Struct index
-        mapping(uint => Payment) payments;
+    /* === This is all linked togehter === */
+    /* A modifier "frames/packs" certain reusable functionality */
+    modifier onlyOwner(){
+        require(isOwner(), "You're not the owner");
+        _;
     }
     
-    //mapping(address => uint) public balanceReceived;
-    mapping(address => Balance) public balanceReceived;
+    function isOwner() public view returns(bool){
+        return (msg.sender == _owner);
+    }
+    /* === This is all linked togehter === */
     
-    function getBalance() public view returns(uint){
-        return address(this).balance;
+}
+
+contract Item{
+    uint public priceInWei;
+    uint public pricePaid;
+    uint public index;
+    
+    ItemManager partentContract;
+    
+    constructor(ItemManager _parentContract, uint _priceInWei, uint _index) public{
+        priceInWei = _priceInWei;
+        index = _index;
+        partentContract = _parentContract;
     }
     
-    function sendMoney() public payable{
-        //A payable specifies will be dealing with addresses
-        //balanceReceived[msg.sender] += msg.value;
-        
-        /*
-            balanceReceived is a mapping where:
-            a) msg.sender act as the key in the mapping, in this case, an address.
-            b) The value is the structure named Balance that currently has 3 members/properties. totalBalance is one of them.
+    /* Callback function to handle the money receipet to send it to Item Manager */
+    receive() external payable{
+        //address(partentContract).transfer(msg.value);
+        /* We'll use a called 'low level function' to ensure transaction has the 
+            needed amount of gas to be executed
             
-            In the mapping balanceReceived ww are storing the value of the transaction (wei) in the element which the key is the address.
+            Call the trigger payment to handle the payment.
+            
+            It's CRUCIALLY IMPORTANT to get the return value...
+            
+            The call gives you two return values:
+            1) A boolean if the transaccion was successful an 
+            2) The return of the function
+            
         */
-        balanceReceived[msg.sender].totalBalance += msg.value;
+        require(pricePaid == 0, "Item's already paid !");
+        require(priceInWei == msg.value, "Only full payments allowed");
+        pricePaid += msg.value;
+        (bool success, ) = address(partentContract).call.value(msg.value)(abi.encodeWithSignature("triggerPayment(uint256)", index));
+        require(success, "The transaction was not successful, canceling!");
+    }
+    
+    fallback() external {} //Interact from external with contract.
+    
+}
+
+contract ItemManager is Ownable{
+    
+    /* Enumeration to define an item state/stage/phase */
+    
+    //enum FreshJuiceSize{ SMALL, MEDIUM, LARGE }
+    enum SupplyChainState{ Created, Paid, Delivered }
+    
+    struct S_Item {
+        Item _item;
+        string _identifier;
+        uint _itemPrice;
+        ItemManager.SupplyChainState _state;
+    }
+    
+    event SupplyChainStep(uint _itemIndex, uint _step, address _itemAddress);
+    
+    /* Structure handling */
+    mapping(uint => S_Item) public items;
+    uint itemIndex;
+    
+    /* Create an item with the provided attributes */
+    function createItem(string memory _identifier, uint _itemPrice) public onlyOwner{
+        Item item = new Item(this, _itemPrice, itemIndex); //Instantiating the contract that'll handle the items
         
-        //Referenced typed (??) this is stored in memory
-        Payment memory payment = Payment(msg.value, now);
-        //The payment value is stored in the Balance structure with the numPayments index
-        balanceReceived[msg.sender].payments[balanceReceived[msg.sender].numPayments] = payment;
-        balanceReceived[msg.sender].numPayments++;
+        items[itemIndex]._item = item;
+        items[itemIndex]._identifier = _identifier;
+        items[itemIndex]._itemPrice = _itemPrice;
+        items[itemIndex]._state = SupplyChainState.Created;
+        emit SupplyChainStep(itemIndex, uint(items[itemIndex]._state), address(item));//Communicate to the "outside world" (SC)
+        itemIndex++;
         
     }
     
-    function withdrawMoney(address payable _to, uint amount) public{
-        //Checks effects interaction patter
-        require(balanceReceived[msg.sender].totalBalance >= amount, "not enough funds");
-        balanceReceived[msg.sender].totalBalance -= amount;
-        _to.transfer(amount);
+    /* When a payment is received, and it covers the price, change the state.
+        Is payable because it'll receive a payment (transfer)
+    */
+    function triggerPayment(uint _itemIndex) public payable{
+        
+        require(items[_itemIndex]._itemPrice == msg.value, "Only full payments accepted !");
+        require(items[_itemIndex]._state == SupplyChainState.Created, "Item is further in the chain !");
+        items[_itemIndex]._state = SupplyChainState.Paid;
+        
+        emit SupplyChainStep(itemIndex, uint(items[_itemIndex]._state), address(items[_itemIndex]._item));//Communicate to the "outside world" (SC)
     }
     
-    function withdrawAllMoney(address payable _to) public{
-        //Checks effects interaction patter
-        //Interaction with the SC comes last, everything needs to be updated first 
-        uint balanceToSend = balanceReceived[msg.sender].totalBalance;
-        balanceReceived[msg.sender].totalBalance = 0;
-        _to.transfer(balanceToSend);
+    function triggerDelivery(uint _itemIndex) public onlyOwner{
+        
+        require(items[_itemIndex]._state == SupplyChainState.Created, "Item is further in the chain !");
+        items[_itemIndex]._state = SupplyChainState.Paid;
+        
+        emit SupplyChainStep(itemIndex, uint(items[_itemIndex]._state), address(items[_itemIndex]._item));//Communicate to the "outside world" (SC)
     }
     
 }
