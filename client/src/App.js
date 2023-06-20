@@ -39,7 +39,10 @@ class App extends Component {
     Item.networks[this.networkId] && ItemManagerContract[this.networkId].address,
     );
     */
-
+    this.listenToPaymentEvent();
+    /* In order to simulate payment, go to truffle development console and type truffle(develop)> web3.eth.sendTransaction( { to:"0xD32Ee0b0eC6Ecf5645fAD3306A004288b0E631d4", value:123, from:accounts[1], gas:300000 } );  
+      substitute with respective address and value
+    */
     this.setState({loaded:true});
 
     } catch (error) {
@@ -60,6 +63,29 @@ class App extends Component {
     alert("Send "+cost+" Wei to "+result.events.SupplyChainStep.returnValues._itemAddress);
     };
     
+  listenToPaymentEvent = () => {
+    let self = this;
+    this.itemManager.events.SupplyChainStep().on("data", async function(evt) {
+    
+    if(evt.returnValues._step == 1) {
+      let itemObj = await self.itemManager.methods.items(evt.returnValues._itemIndex).call(
+      );
+      console.log(itemObj);
+      alert("Item " + itemObj._identifier + " was paid, deliver it now!");
+      };
+      console.log(evt);
+
+    /* 
+    console.log(evt);
+
+    let itemObj = await self.itemManager.methods.items(evt.returnValues._itemIndex).call();
+    alert("Item " + itemObj._identifier + " was successfully paid, deliver it now!");
+    */
+
+    })
+
+  }
+
     handleInputChange = (event) => {
     const target = event.target;
     const value = target.type === 'checkbox' ? target.checked : target.value;
